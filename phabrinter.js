@@ -1,6 +1,6 @@
 class Phabrinter {
   constructor() {
-    this.init().catch(console.error);
+    this.init().catch(e => console.error(e.toString()));
   }
 
   async init() {
@@ -46,10 +46,12 @@ class Phabrinter {
   }
 
   addReviewedColumn(headerRow) {
+    const pathCell = headerRow.getElementsByClassName("differential-toc-file")[0];
+
     const reviewedCell = document.createElement("th");
     reviewedCell.classList.add("phabrinter-generated");
     reviewedCell.textContent = "Reviewed";
-    headerRow.appendChild(reviewedCell);
+    pathCell.parentNode.insertBefore(reviewedCell, pathCell);
   }
 
   collectFiles(filesTbody, headerRow) {
@@ -67,6 +69,8 @@ class Phabrinter {
       if (!originalLink) {
         continue;
       }
+
+      const linkCell = this.findParentNode(originalLink, "td");
 
       const name = originalLink.textContent;
 
@@ -87,6 +91,7 @@ class Phabrinter {
         name,
         row,
         link,
+        linkCell,
         diff,
         diffButtons,
         diffHeader,
@@ -98,12 +103,23 @@ class Phabrinter {
     return files;
   }
 
+  findParentNode(node, nodeName) {
+    while (node && node != document.body) {
+      if (node.nodeName.toLowerCase() == nodeName) {
+        return node;
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }
+
   addReviewedCells() {
     for (const file of this.files) {
       {
         const reviewedCell = document.createElement("td");
         reviewedCell.classList.add("phabrinter-generated");
-        file.row.appendChild(reviewedCell);
+        reviewedCell.classList.add("phabrinter-reviewed-cell");
+        file.row.insertBefore(reviewedCell, file.linkCell);
 
         const reviewedCheckbox = document.createElement("input");
         reviewedCheckbox.type = "checkbox";
@@ -148,6 +164,9 @@ class Phabrinter {
     const ftypeCell = document.createElement("td");
     row.appendChild(ftypeCell);
 
+    const reviewedCell = document.createElement("td");
+    row.appendChild(reviewedCell);
+
     const fileCell = document.createElement("td");
     row.appendChild(fileCell);
 
@@ -158,9 +177,6 @@ class Phabrinter {
 
     const packageCell = document.createElement("td");
     row.appendChild(packageCell);
-
-    const reviewedCell = document.createElement("td");
-    row.appendChild(reviewedCell);
 
     filesTbody.insertBefore(row, headerRow.nextSibling);
 

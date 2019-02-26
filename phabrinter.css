@@ -15,3 +15,7 @@
 .phabrinter-diff-collapsed {
   display: none;
 }
+
+.phabrinter-reviewed-cell {
+  text-align: center;
+}
