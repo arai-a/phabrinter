@@ -1,0 +1,77 @@
+class GlobalState {
+  static async addPatch(patchName) {
+    const state = await GlobalState._load();
+    state.patches[this.patchName] = Date.now();
+    await GlobalState._save(state);
+
+    await GlobalState._expire(state);
+  }
+
+  static async getPatchCount() {
+    const state = await GlobalState._load();
+    return Object.keys(state.patches).length;
+  }
+
+  static async getExpireDays() {
+    const state = await GlobalState._load();
+    return state.expireDays;
+  }
+
+  static async setExpireDays(expireDays) {
+    const state = await GlobalState._load();
+    state.expireDays = expireDays;
+    await GlobalState._save(state);
+    await GlobalState._expire(state);
+  }
+
+  static async _expire(state) {
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (this.expiring) {
+      return;
+    }
+    if (now < state.lastExpireCheck + oneDay) {
+      return;
+    }
+
+    this.expiring = true;
+
+    state.lastExpireCheck = now;
+
+    const expiredPatchNames = [];
+    for (const patchName of Object.keys(state.patches)) {
+      if (now > state.patches[patchName] + state.expireDays * oneDay) {
+        delete state.patches[patchName];
+        expiredPatchNames.push(patchName);
+      }
+    }
+
+    await this._save(state);
+
+    if (expiredPatchNames.length) {
+      await browser.storage.local.remove(expiredPatchNames);
+    }
+
+    this.expiring = false;
+  }
+
+  static async _load() {
+    const tmp = await browser.storage.local.get("globalState");
+    if (!("globalState" in tmp)) {
+      return {
+        patches: {},
+        lastExpireCheck: Date.now(),
+        expireDays: 30,
+      };
+    }
+
+    return JSON.parse(tmp.globalState);
+  }
+
+  static async _save(state) {
+    await browser.storage.local.set({
+      globalState: JSON.stringify(state),
+    });
+  }
+}

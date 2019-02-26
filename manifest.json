@@ -1,0 +1,37 @@
+{
+  "manifest_version": 2,
+  "name": "phabrinter",
+  "version": "0.1",
+  "description": "Make Phabricator usability more similar to Splinter.",
+
+  "permissions": [
+    "storage",
+    "https://phabricator.services.mozilla.com/D*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://phabricator.services.mozilla.com/D*"
+      ],
+      "js": [
+        "globalState.js",
+        "phabrinter.js"
+      ],
+      "css": [
+        "phabrinter.css"
+      ]
+    }
+  ],
+
+  "options_ui": {
+    "page": "options.html"
+  },
+
+  "applications": {
+    "gecko": {
+      "id": "phabrinter@unmht.org",
+      "strict_min_version": "62.0"
+    }
+  }
+}

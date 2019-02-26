@@ -1,0 +1,17 @@
+.phabrinter-link-current {
+  color: #000000 !important;
+}
+
+.phabrinter-link-reviewed {
+  color: #6B748C;
+  text-decoration: line-through;
+}
+
+.phabrinter-reviewed-box {
+  float: right;
+  padding: 4px 14px 5px;
+}
+
+.phabrinter-diff-collapsed {
+  display: none;
+}
