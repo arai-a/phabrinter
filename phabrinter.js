@@ -77,6 +77,7 @@ class Phabrinter {
       // Because the link has event listner, create our own link.
       const link = document.createElement("a");
       link.classList.add("phabrinter-generated");
+      link.classList.add("phabrinter-link");
       link.textContent = name;
 
       originalLink.parentNode.insertBefore(link, originalLink);
@@ -171,6 +172,7 @@ class Phabrinter {
     row.appendChild(fileCell);
 
     const link = document.createElement("a");
+    link.classList.add("phabrinter-link");
     const name = "All Files";
     link.textContent = name;
     fileCell.appendChild(link);

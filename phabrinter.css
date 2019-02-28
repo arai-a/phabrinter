@@ -1,5 +1,17 @@
+.phabrinter-link:before {
+  display: inline-block;
+  width: 16px;
+  content: "";
+}
+
 .phabrinter-link-current {
   color: #000000 !important;
+}
+
+.phabrinter-link-current:before {
+  display: inline-block;
+  width: 16px;
+  content: "▸";
 }
 
 .phabrinter-link-reviewed {
