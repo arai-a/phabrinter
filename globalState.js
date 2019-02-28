@@ -1,9 +1,19 @@
 class GlobalState {
-  static async addPatch(patchName) {
+  static async loadPatch(patchName) {
     const state = await this._load();
-    state.patches[patchName] = Date.now();
-    await this._save(state);
+    if (!(patchName in state.patches)) {
+      return null;
+    }
+    return state.patches[patchName].reviewedState;
+  }
 
+  static async addPatch(patchName, reviewedState) {
+    const state = await this._load();
+    state.patches[patchName] = {
+      reviewedState,
+      lastModified: Date.now(),
+    };
+    await this._save(state);
     await this._expire(state);
   }
 
@@ -26,6 +36,8 @@ class GlobalState {
 
   static async clear() {
     const state = await this._load();
+    const patchNames = Object.keys(state.patches);
+
     state.patches = {};
     await this._save(state);
   }
@@ -45,19 +57,14 @@ class GlobalState {
 
     state.lastExpireCheck = now;
 
-    const expiredPatchNames = [];
     for (const patchName of Object.keys(state.patches)) {
-      if (now > state.patches[patchName] + state.expireDays * oneDay) {
+      const patch = state.patches[patchName];
+      if (now > patch.lastModified + state.expireDays * oneDay) {
         delete state.patches[patchName];
-        expiredPatchNames.push(patchName);
       }
     }
 
     await this._save(state);
-
-    if (expiredPatchNames.length) {
-      await browser.storage.local.remove(expiredPatchNames);
-    }
 
     this.expiring = false;
   }

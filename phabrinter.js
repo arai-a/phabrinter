@@ -1,6 +1,6 @@
 class Phabrinter {
   constructor() {
-    this.init().catch(e => console.error(e.toString()));
+    this.init();
   }
 
   async init() {
@@ -226,7 +226,7 @@ class Phabrinter {
     }
 
     if (save) {
-      this.saveReviewedState().catch(e => console.error(e.toString()));
+      this.saveReviewedState();
     }
   }
 
@@ -255,11 +255,10 @@ class Phabrinter {
   }
 
   async loadReviewedState() {
-    const tmp = await browser.storage.local.get(this.patchName);
-    if (!(this.patchName in tmp)) {
+    const reviewedState = await GlobalState.loadPatch(this.patchName);
+    if (!reviewedState) {
       return;
     }
-    const reviewedState = JSON.parse(tmp[this.patchName]);
 
     const filesMap = {};
     for (const file of this.files) {
@@ -280,13 +279,7 @@ class Phabrinter {
       reviewed: file.reviewed,
     }));
 
-    // Saving objects takes longer than saving strings.
-    // Stringify each value here.
-    await browser.storage.local.set({
-      [this.patchName]: JSON.stringify(reviewedState),
-    });
-
-    await GlobalState.addPatch(this.patchName);
+    await GlobalState.addPatch(this.patchName, reviewedState);
   }
 };
 new Phabrinter();
