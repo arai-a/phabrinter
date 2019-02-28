@@ -24,4 +24,4 @@ async function clearState() {
 
 document.addEventListener("DOMContentLoaded", loadOptions);
 document.getElementById("options").addEventListener("submit", saveOptions);
-document.getElementById("clear").addEventListener("click", clearState);
+document.getElementById("clear").addEventListener("submit", clearState);
