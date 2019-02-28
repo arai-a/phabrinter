@@ -1,7 +1,7 @@
 class GlobalState {
   static async addPatch(patchName) {
     const state = await GlobalState._load();
-    state.patches[this.patchName] = Date.now();
+    state.patches[patchName] = Date.now();
     await GlobalState._save(state);
 
     await GlobalState._expire(state);
@@ -22,6 +22,12 @@ class GlobalState {
     state.expireDays = expireDays;
     await GlobalState._save(state);
     await GlobalState._expire(state);
+  }
+
+  static async clear() {
+    const state = await GlobalState._load();
+    state.patches = {};
+    await GlobalState._save(state);
   }
 
   static async _expire(state) {

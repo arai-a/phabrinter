@@ -7,9 +7,10 @@
   <body>
     <form id="options">
       <label>Reviewed state expires in <input type="number" id="expireDays" size="8"> days</label><br>
+      <div id="state"></div>
       <button type="submit">Save</button>
+      <button id="clear">Clear cached state</button>
     </form>
-    <div id="state"></div>
     <script src="globalState.js"></script>
     <script src="options.js"></script>
   </body>
