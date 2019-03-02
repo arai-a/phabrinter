@@ -9,6 +9,10 @@
     "https://phabricator.services.mozilla.com/D*"
   ],
 
+  "icons": {
+    "96": "phabrinter.png"
+  },
+
   "content_scripts": [
     {
       "matches": [
