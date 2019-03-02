@@ -24,10 +24,20 @@
   padding: 4px 14px 5px;
 }
 
+.phabrinter-collapsed-button {
+  font-family: monospace;
+  margin: 0px 4px;
+  display: inline-block;
+}
+
 .phabrinter-diff-collapsed {
   display: none;
 }
 
 .phabrinter-reviewed-cell {
   text-align: center;
+}
+
+.phabrinter-diff-content-collapsed {
+  display: none;
 }

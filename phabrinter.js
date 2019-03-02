@@ -19,7 +19,7 @@ class Phabrinter {
     this.currentFile = null;
     this.addReviewedColumn(headerRow);
     this.files = this.collectFiles(filesTbody, headerRow);
-    this.addReviewedCells();
+    this.addReviewedAndCollapsed();
     this.allFiles = this.addAllFilesLink(filesTbody, headerRow);
 
     await this.loadReviewedState();
@@ -84,6 +84,7 @@ class Phabrinter {
       originalLink.style.display = "none";
 
       const diff = diffs[i];
+      const diffContent = diff.getElementsByClassName("changeset-view-content")[0];
       const diffButtons = diff.getElementsByClassName("differential-changeset-buttons")[0];
       const diffHeader = diff.getElementsByTagName("h1")[0];
 
@@ -94,9 +95,11 @@ class Phabrinter {
         link,
         linkCell,
         diff,
+        diffContent,
         diffButtons,
         diffHeader,
         reviewed: false,
+        collapsed: false,
       });
       i++;
     }
@@ -114,7 +117,7 @@ class Phabrinter {
     return null;
   }
 
-  addReviewedCells() {
+  addReviewedAndCollapsed() {
     for (const file of this.files) {
       {
         const reviewedCell = document.createElement("td");
@@ -135,6 +138,16 @@ class Phabrinter {
         reviewedBox.classList.add("phabrinter-reviewed-box");
         file.diffButtons.parentNode.insertBefore(reviewedBox,
                                                  file.diffButtons.nextSibling);
+
+        const collapsedButton = document.createElement("div");
+        collapsedButton.classList.add("phabrinter-collapsed-button");
+        collapsedButton.textContent = "[-]";
+        reviewedBox.appendChild(collapsedButton);
+        file.collapsedButton = collapsedButton;
+        file.collapsedButton.addEventListener("click", () => {
+          file.collapsed = !file.collapsed;
+          this.updateCollapsed(file);
+        });
 
         const reviewedCheckbox = document.createElement("input");
         reviewedCheckbox.id = `phabrinter-diff-reviewed-${file.i}`;
@@ -226,7 +239,21 @@ class Phabrinter {
     }
 
     if (save) {
-      this.saveReviewedState();
+      this.saveState();
+    }
+  }
+
+  updateCollapsed(file, { save=true } = {}) {
+    file.collapsedButton.textContent = file.collapsed ? "[+]" : "[-]";
+
+    if (file.collapsed) {
+      file.diffContent.classList.add("phabrinter-diff-content-collapsed");
+    } else {
+      file.diffContent.classList.remove("phabrinter-diff-content-collapsed");
+    }
+
+    if (save) {
+      this.saveState();
     }
   }
 
@@ -268,15 +295,18 @@ class Phabrinter {
       if (item.name in filesMap) {
         const file = filesMap[item.name];
         file.reviewed = item.reviewed;
+        file.collapsed = !!item.collapsed;
         this.updateReviewed(file, { save: false });
+        this.updateCollapsed(file, { save: false });
       }
     }
   }
 
-  async saveReviewedState() {
+  async saveState() {
     const reviewedState = this.files.map(file => ({
       name: file.name,
       reviewed: file.reviewed,
+      collapsed: file.collapsed,
     }));
 
     await GlobalState.addPatch(this.patchName, reviewedState);
