@@ -12,12 +12,13 @@ class Phabrinter {
 
     this.expiring = false;
 
-    const filesTable = document.getElementsByClassName("aphront-table-view")[0];
-    const filesTbody = filesTable.getElementsByTagName("tbody")[0];
+    this.filesTable = document.getElementsByClassName("aphront-table-view")[0];
+    const filesTbody = this.filesTable.getElementsByTagName("tbody")[0];
     const headerRow = filesTbody.getElementsByTagName("tr")[0];
 
     this.currentFile = null;
     this.addReviewedColumn(headerRow);
+    this.addListCollapsedButton(headerRow);
     this.files = this.collectFiles(filesTbody, headerRow);
     this.addReviewedAndCollapsed();
     this.allFiles = this.addAllFilesLink(filesTbody, headerRow);
@@ -54,6 +55,58 @@ class Phabrinter {
     pathCell.parentNode.insertBefore(reviewedCell, pathCell);
   }
 
+  addListCollapsedButton(headerRow) {
+    {
+      const charCell = headerRow.getElementsByClassName("differential-toc-char")[0];
+      const collapsedButton = document.createElement("div");
+      collapsedButton.classList.add("phabrinter-generated");
+      collapsedButton.classList.add("phabrinter-collapsed-button");
+      collapsedButton.textContent = "[-]";
+      charCell.appendChild(collapsedButton);
+
+      collapsedButton.addEventListener("click", () => {
+        this.listCollapsed = true;
+        this.updateListCollapsed();
+      });
+
+      this.listCollapsed = false;
+      this.listCollapsedButtond = collapsedButton;
+    }
+
+    {
+      const smallList = document.createElement("div");
+      smallList.classList.add("phabrinter-generated");
+      this.filesTable.after(smallList);
+
+      const collapsedButton = document.createElement("div");
+      collapsedButton.classList.add("phabrinter-collapsed-button");
+      collapsedButton.textContent = "[+]";
+      smallList.appendChild(collapsedButton);
+
+      collapsedButton.addEventListener("click", () => {
+        this.listCollapsed = false;
+        this.updateListCollapsed();
+      });
+
+      this.listCollapsed = false;
+      this.listCollapsedButtond2 = collapsedButton;
+
+      this.smallList = smallList;
+    }
+
+    this.updateListCollapsed();
+  }
+
+  updateListCollapsed() {
+    if (this.listCollapsed) {
+      this.filesTable.classList.add("phabrinter-list-collapsed");
+      this.smallList.classList.remove("phabrinter-list-collapsed");
+    } else {
+      this.filesTable.classList.remove("phabrinter-list-collapsed");
+      this.smallList.classList.add("phabrinter-list-collapsed");
+    }
+  }
+
   collectFiles(filesTbody, headerRow) {
     const files = [];
 
@@ -88,11 +141,18 @@ class Phabrinter {
       const diffButtons = diff.getElementsByClassName("differential-changeset-buttons")[0];
       const diffHeader = diff.getElementsByTagName("h1")[0];
 
+      this.smallList.append(document.createTextNode(" | "));
+
+      const smallLink = document.createElement("a");
+      smallLink.textContent = name.split("/").pop();
+      this.smallList.append(smallLink);
+
       files.push({
         i,
         name,
         row,
         link,
+        smallLink,
         linkCell,
         diff,
         diffContent,
@@ -195,10 +255,17 @@ class Phabrinter {
 
     filesTbody.insertBefore(row, headerRow.nextSibling);
 
+    const smallLink = document.createElement("a");
+    smallLink.textContent = name;
+    this.listCollapsedButtond2.after(smallLink);
+
+    this.listCollapsedButtond2.after(document.createTextNode(" | "));
+
     return {
       name,
       row,
       link,
+      smallLink,
     };
   }
 
@@ -208,8 +275,10 @@ class Phabrinter {
     for (const file of [this.allFiles, ...this.files]) {
       if (file === currentFile) {
         file.link.classList.add("phabrinter-link-current");
+        file.smallLink.classList.add("phabrinter-link-current-small");
       } else {
         file.link.classList.remove("phabrinter-link-current");
+        file.smallLink.classList.remove("phabrinter-link-current-small");
       }
     }
 
@@ -234,8 +303,10 @@ class Phabrinter {
 
     if (file.reviewed) {
       file.link.classList.add("phabrinter-link-reviewed");
+      file.smallLink.classList.add("phabrinter-link-reviewed");
     } else {
       file.link.classList.remove("phabrinter-link-reviewed");
+      file.smallLink.classList.remove("phabrinter-link-reviewed");
     }
 
     if (save) {
@@ -262,9 +333,17 @@ class Phabrinter {
       this.setCurrent(this.allFiles);
       event.preventDefault();
     });
+    this.allFiles.smallLink.addEventListener("click", event => {
+      this.setCurrent(this.allFiles);
+      event.preventDefault();
+    });
 
     for (const file of this.files) {
       file.link.addEventListener("click", event => {
+        this.setCurrent(file);
+        event.preventDefault();
+      });
+      file.smallLink.addEventListener("click", event => {
         this.setCurrent(file);
         event.preventDefault();
       });

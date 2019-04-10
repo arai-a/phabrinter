@@ -9,6 +9,7 @@ This provides the following feature:
  - "Reviewed" checkbox is added to each file, and that state is saved across reloads (expires in 30 days)
  - Collapsed state ("[-]" button) is added to each file, and that state is saved across reloads (expires in 30 days)
    - This is different than Phabricator's built-in collapsed state
+ - Add collapse button ("[-]" button) to file list, to make the file list similar to Splinter
 
 # Install
 
