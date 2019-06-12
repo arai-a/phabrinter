@@ -12,7 +12,10 @@ class Phabrinter {
 
     this.expiring = false;
 
-    this.filesTable = document.getElementsByClassName("aphront-table-view")[0];
+    this.filesTable = this.searchFilesTable();
+    if (!this.filesTable) {
+      return;
+    }
     const filesTbody = this.filesTable.getElementsByTagName("tbody")[0];
     const headerRow = filesTbody.getElementsByTagName("tr")[0];
 
@@ -28,6 +31,15 @@ class Phabrinter {
     this.hookLinks();
 
     this.setCurrent(this.allFiles);
+  }
+
+  searchFilesTable() {
+    for (const table of document.getElementsByClassName("aphront-table-view")) {
+      if (table.getElementsByClassName("differential-toc-file").length) {
+        return table;
+      }
+    }
+    return null;
   }
 
   // Remove existing elements that's added by older version.
