@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "phabrinter",
-  "version": "0.3",
+  "version": "0.4",
   "description": "Make Phabricator usability more similar to Splinter.",
 
   "permissions": [
