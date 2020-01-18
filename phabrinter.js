@@ -1,3 +1,9 @@
+function sleep(t) {
+  return new Promise(resolve => {
+    setTimeout(resolve, t);
+  });
+}
+
 class Phabrinter {
   constructor() {
     this.init();
@@ -31,6 +37,8 @@ class Phabrinter {
     this.hookLinks();
 
     this.setCurrent(this.allFiles);
+
+    this.extendInlineSummaryTable();
   }
 
   searchFilesTable() {
@@ -401,6 +409,191 @@ class Phabrinter {
     }));
 
     await GlobalState.addPatch(this.patchName, reviewedState);
+  }
+
+  extendInlineSummaryTable() {
+    const summaryTables = document.body.getElementsByClassName("phabricator-inline-summary-table");
+    for (const table of summaryTables) {
+      const tbody = table.getElementsByTagName("tbody")[0];
+
+      const row = document.createElement("tr");
+      row.classList.add("phabrinter-generated");
+      tbody.firstChild.before(row);
+
+      const cell = document.createElement("td");
+      cell.setAttribute("colspan", "2");
+      row.appendChild(cell);
+
+      const button = document.createElement("input");
+      button.type = "button";
+      button.value = "Show context";
+      cell.appendChild(button);
+
+      const status = document.createElement("span");
+      cell.appendChild(status);
+
+      button.addEventListener("click", () => {
+        this.showContextInSummary(row, status, table)
+          .catch(e => console.log(e));
+      });
+    }
+  }
+
+  getInlineLink(row) {
+    const lineNumberCells = row.getElementsByClassName("inline-line-number");
+    if (lineNumberCells.length == 0) {
+      return undefined;
+    }
+
+    const lineNumberCell = lineNumberCells[0];
+
+    const links = lineNumberCell.getElementsByTagName("a");
+    if (links.length == 0) {
+      return undefined;
+    }
+
+    const link = links[0];
+    const href = link.getAttribute("href");
+    if (!href) {
+      return undefined;
+    }
+
+    const m = href.match(/^#(inline-\d+)$/);
+    if (!m) {
+      return undefined;
+    }
+
+    return m[1];
+  }
+
+  getBackwardLink(row) {
+    const links = row.getElementsByClassName("ghost-icon");
+    if (links.length == 0) {
+      return [undefined, undefined];
+    }
+    const link = links[0];
+    const href = link.getAttribute("href");
+    if (!href) {
+      return [undefined, undefined];
+    }
+
+    const m = href.match(/^(\/D\d+\?id=\d+)#(inline-\d+)$/);
+    if (!m) {
+      return [undefined, undefined];
+    }
+
+    return [m[1], m[2]];
+  }
+
+  async showContextInSummary(buttonRow, status, table) {
+    function cleanTree(node) {
+      const nodes = [node, ...node.getElementsByTagName("*")];
+      for (const node of nodes) {
+        node.removeAttribute("id");
+      }
+      return node;
+    }
+
+    const summaryRows = table.getElementsByTagName("tr");
+
+    const backwardLinkWindows = {};
+
+    for (const summaryRow of [...summaryRows]) {
+      const inlineLink = this.getInlineLink(summaryRow);
+      if (!inlineLink) {
+        continue;
+      }
+
+      const anchor = document.getElementById(inlineLink);
+      if (!anchor) {
+        continue;
+      }
+
+      let inlineRow = this.findParentNode(anchor, "tr");
+
+      const [backwardLink, backwardInlineLink] = this.getBackwardLink(inlineRow);
+      if (backwardLink) {
+        let win;
+        if (backwardLink in backwardLinkWindows) {
+          win = backwardLinkWindows[backwardLink];
+        } else {
+          status.textContent =
+            "opening new window to retrieve previous diff";
+
+          const url = "https://phabricator.services.mozilla.com" + backwardLink;
+          win = window.open(url, "", "width=1280,height=100");
+          backwardLinkWindows[backwardLink] = win;
+        }
+
+        for (let i = 0; i < 10; i++) {
+          try {
+            const anchor = win.document.getElementById(backwardInlineLink);
+            if (!anchor) {
+              status.textContent += ".";
+              await sleep(1000);
+              continue;
+            }
+
+            inlineRow = this.findParentNode(anchor, "tr");
+            break;
+          } catch (e) {
+            status.textContent += ".";
+            await sleep(1000);
+            continue;
+          }
+        }
+
+        if (!inlineRow) {
+          continue;
+        }
+      }
+
+      const origCodeTable = this.findParentNode(anchor, "table");
+
+      const codeRow = document.createElement("tr");
+      codeRow.classList.add("phabrinter-generated");
+      summaryRow.before(codeRow);
+
+      const codeCell = document.createElement("td");
+      codeCell.setAttribute("colspan", "2");
+      codeRow.appendChild(codeCell);
+
+      const codeTable = cleanTree(origCodeTable.cloneNode(false));
+      codeCell.appendChild(codeTable);
+
+      const colgroups = origCodeTable.getElementsByTagName("colgroup");
+      if (colgroups.length) {
+        codeTable.appendChild(cleanTree(colgroups[0].cloneNode(true)));
+      }
+
+      const contextRows = [];
+
+      let codeLines = 0;
+      let foundCode = false;
+      for (let row = inlineRow.previousSibling;
+           row && codeLines < 8;
+           row = row.previousSibling) {
+        if (row.classList.contains("inline")) {
+          if (foundCode) {
+            continue;
+          }
+        } else {
+          foundCode = true;
+          codeLines++;
+        }
+
+        contextRows.unshift(row);
+      }
+
+      for (const row of contextRows) {
+        codeTable.appendChild(cleanTree(row.cloneNode(true)));
+      }
+    }
+
+    for (const win of Object.values(backwardLinkWindows)) {
+      win.close();
+    }
+    buttonRow.remove();
   }
 };
 new Phabrinter();
