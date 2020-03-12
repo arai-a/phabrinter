@@ -421,7 +421,7 @@ class Phabrinter {
       tbody.firstChild.before(row);
 
       const cell = document.createElement("td");
-      cell.setAttribute("colspan", "2");
+      cell.setAttribute("colspan", "3");
       row.appendChild(cell);
 
       const button = document.createElement("input");
@@ -442,42 +442,23 @@ class Phabrinter {
   getInlineLink(row) {
     const lineNumberCells = row.getElementsByClassName("inline-line-number");
     if (lineNumberCells.length == 0) {
-      return undefined;
+      return [undefined, undefined];
     }
 
     const lineNumberCell = lineNumberCells[0];
 
     const links = lineNumberCell.getElementsByTagName("a");
     if (links.length == 0) {
-      return undefined;
-    }
-
-    const link = links[0];
-    const href = link.getAttribute("href");
-    if (!href) {
-      return undefined;
-    }
-
-    const m = href.match(/^#(inline-\d+)$/);
-    if (!m) {
-      return undefined;
-    }
-
-    return m[1];
-  }
-
-  getBackwardLink(row) {
-    const links = row.getElementsByClassName("ghost-icon");
-    if (links.length == 0) {
       return [undefined, undefined];
     }
+
     const link = links[0];
     const href = link.getAttribute("href");
     if (!href) {
       return [undefined, undefined];
     }
 
-    const m = href.match(/^(\/D\d+\?id=\d+)#(inline-\d+)$/);
+    const m = href.match(/^(\/D\d+\?id=\d+)?#(inline-\d+)$/);
     if (!m) {
       return [undefined, undefined];
     }
@@ -499,19 +480,12 @@ class Phabrinter {
     const backwardLinkWindows = {};
 
     for (const summaryRow of [...summaryRows]) {
-      const inlineLink = this.getInlineLink(summaryRow);
+      const [backwardLink, inlineLink] = this.getInlineLink(summaryRow);
       if (!inlineLink) {
         continue;
       }
 
-      const anchor = document.getElementById(inlineLink);
-      if (!anchor) {
-        continue;
-      }
-
-      let inlineRow = this.findParentNode(anchor, "tr");
-
-      const [backwardLink, backwardInlineLink] = this.getBackwardLink(inlineRow);
+      let anchor, inlineRow;
       if (backwardLink) {
         let win;
         if (backwardLink in backwardLinkWindows) {
@@ -527,7 +501,7 @@ class Phabrinter {
 
         for (let i = 0; i < 10; i++) {
           try {
-            const anchor = win.document.getElementById(backwardInlineLink);
+            anchor = win.document.getElementById(inlineLink);
             if (!anchor) {
               status.textContent += ".";
               await sleep(1000);
@@ -546,6 +520,13 @@ class Phabrinter {
         if (!inlineRow) {
           continue;
         }
+      } else {
+        anchor = document.getElementById(inlineLink);
+        if (!anchor) {
+          continue;
+        }
+
+        inlineRow = this.findParentNode(anchor, "tr");
       }
 
       const origCodeTable = this.findParentNode(anchor, "table");
@@ -555,7 +536,7 @@ class Phabrinter {
       summaryRow.before(codeRow);
 
       const codeCell = document.createElement("td");
-      codeCell.setAttribute("colspan", "2");
+      codeCell.setAttribute("colspan", "3");
       codeRow.appendChild(codeCell);
 
       const codeTable = cleanTree(origCodeTable.cloneNode(false));
